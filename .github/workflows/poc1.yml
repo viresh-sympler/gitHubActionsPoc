@@ -1,15 +1,19 @@
-name: Create Directory on EC2
+name: Deploy to EC2
 
 on:
   push:
     branches:
-      - main  # Change this to your deployment branch if needed
+      - main  # Change this if needed
+      - dev   # Add other branches if needed
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Set Up SSH Connection
         run: |
           mkdir -p ~/.ssh
@@ -17,6 +21,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Create Directory on EC2
+      - name: Deploy to EC2
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /var/www/html/mydir"
+          BRANCH_NAME=${GITHUB_REF##*/}
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            sudo rm -rf /var/www/html/${BRANCH_NAME}
+            mkdir -p /var/www/html/${BRANCH_NAME}
+          EOF
+          
+          scp -r ./* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/${BRANCH_NAME}/
