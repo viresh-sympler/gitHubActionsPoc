@@ -3,8 +3,8 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # Change this if needed
-      - dev   # Add other branches if needed
+      - main
+      - dev  # Add other branches if needed
 
 jobs:
   deploy:
@@ -23,10 +23,13 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          BRANCH_NAME=${GITHUB_REF##*/}
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+          echo "Deploying branch: $BRANCH_NAME"
+
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             sudo rm -rf /var/www/html/${BRANCH_NAME}
-            mkdir -p /var/www/html/${BRANCH_NAME}
+            sudo mkdir -p /var/www/html/${BRANCH_NAME}
+            sudo chown -R ${{ secrets.EC2_USER }}:$USER /var/www/html/${BRANCH_NAME}
           EOF
-          
-          scp -r ./* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/${BRANCH_NAME}/
+
+          rsync -avz --delete ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/${BRANCH_NAME}/
