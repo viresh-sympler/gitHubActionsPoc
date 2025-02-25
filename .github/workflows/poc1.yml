@@ -6,7 +6,7 @@ on:
       - main
       - dev  # Add other branches if needed
 
-jobs:
+jobs: 
   deploy:
     runs-on: ubuntu-latest
 
