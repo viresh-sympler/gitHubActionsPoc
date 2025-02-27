@@ -49,7 +49,7 @@ jobs:
       - name: Copy File from S3
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
-          aws s3 cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz .
+          aws s3 cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz  .
 
       - name: Extract the Archive
         run: |
