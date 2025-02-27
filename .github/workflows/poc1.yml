@@ -52,7 +52,7 @@ jobs:
             --parameters 'commands=["aws s3 cp cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz /var/www/html/vcsdatabase.com/current/ && 
               tar -xzvf /var/www/html/vcsdatabase.com/${BRANCH_NAME}.tar.gz -C /var/www/html/vcsdatabase.com/current"]' \
             --comment "Deploying from GitHub Actions" \
-            --region us-east-1
+            --region us-east-2
             
           # aws ssm send-command \
           #   --document-name "AWS-RunShellScript" \
