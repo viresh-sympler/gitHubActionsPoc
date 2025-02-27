@@ -43,15 +43,28 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1  # Change to your AWS region
 
-      - name: Verify AWS Identity
-        run: aws sts get-caller-identity
-
-      - name: Copy File from S3
+      - name: Run SSM Command on EC2
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
-          aws s3 cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz  .
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"Your-EC2-Instance-Tag\"]}]" \
+            --parameters 'commands=["
+              aws s3 cp cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz /var/www/html/vcsdatabase.com/current/ && 
+              tar -xzvf /var/www/html/vcsdatabase.com/${BRANCH_NAME}.tar.gz -C /var/www/html/vcsdatabase.com/current
+            "]' \
+            --comment "Deploying new application version" \
+            --region us-east-2
+            
+      # - name: Verify AWS Identity
+      #   run: aws sts get-caller-identity
 
-      - name: Extract the Archive
-        run: |
-          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
-          tar -xzvf ${BRANCH_NAME}.tar.gz -C /var/www/html/vcsdatabase.com/current/
+      # - name: Copy File from S3
+      #   run: |
+      #     BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+      #     aws s3 cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz  .
+
+      # - name: Extract the Archive
+      #   run: |
+      #     BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+      #     tar -xzvf ${BRANCH_NAME}.tar.gz -C /var/www/html/vcsdatabase.com/current/
