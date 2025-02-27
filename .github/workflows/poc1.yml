@@ -48,7 +48,7 @@ jobs:
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"Your-EC2-Instance-Tag\"]}]" \
+            --targets "[{"Key":"InstanceIds","Values":["i-0be6eaacc7488dccf"]}}]" \
             --parameters 'commands=["
               aws s3 cp cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz /var/www/html/vcsdatabase.com/current/ && 
               tar -xzvf /var/www/html/vcsdatabase.com/${BRANCH_NAME}.tar.gz -C /var/www/html/vcsdatabase.com/current
