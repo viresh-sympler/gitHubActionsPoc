@@ -30,9 +30,24 @@ jobs:
             #rm -rf /web_branch/branches/* #deleting current releases to save space on EC2, need to remove it 
             #cd /home/ec2-user/deployer && dep deploy:unlock && dep deploy --branch=${BRANCH_NAME} 
             #copy file to s3
-            aws s3 scp /web_branch/archives/${BRANCH_NAME}.tar.gz s3://csm-access-github-actions-poc-builds/qa/
+            #aws s3 scp /web_branch/archives/${BRANCH_NAME}.tar.gz s3://csm-access-github-actions-poc-builds/qa/
             
             # sudo chown -R ${{ secrets.EC2_USER }}:$(whoami) /var/www/html/${BRANCH_NAME} 
           EOF
 
-          # rsync -avz --delete ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/${BRANCH_NAME}/
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1  # Change to your AWS region
+
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      - name: Copy File from S3
+        run: aws s3 cp s3://your-bucket-name/path/to/file.tar.gz .
+
+      - name: Extract the Archive
+        run: tar -xzvf file.tar.gz -C /your/destination/path
