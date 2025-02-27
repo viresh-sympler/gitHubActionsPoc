@@ -47,7 +47,7 @@ jobs:
         run: aws sts get-caller-identity
 
       - name: Copy File from S3
-        run: aws s3 cp s3://your-bucket-name/path/to/file.tar.gz .
+        run: aws s3 cp s3://csm-access-github-actions-poc-builds/qa/default_config_files.zip .
 
       - name: Extract the Archive
-        run: tar -xzvf file.tar.gz -C /your/destination/path
+        run: tar -xzvf file.tar.gz -C /var/www/html/vcsdatabase.com/current/
