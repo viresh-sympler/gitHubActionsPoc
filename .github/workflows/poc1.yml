@@ -2,7 +2,7 @@ on:
   push:
     branches:
       - aws_poc
-      - dev  # Add other branches if needed
+      - dev
 
 jobs: 
   deploy:
@@ -19,21 +19,18 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy to EC2
+      - name: Deploy to EC2 & Tar Files
         run: |
-          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
-          echo "Deploying branch: $BRANCH_NAME"
-
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            # Tar and prepare the file for upload
-            tar -czf /web_branch/archives/${BRANCH_NAME}.tar.gz -C /var/www/html/${BRANCH_NAME} .
-
-            echo "File compressed: /web_branch/archives/${BRANCH_NAME}.tar.gz"
+            tar -czf /web_branch/archives/${{ github.ref_name }}.tar.gz -C /var/www/html/${{ github.ref_name }} .
           EOF
 
-      - name: Copy to S3
+      - name: Copy File from EC2 to GitHub Runner
         run: |
           scp -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/web_branch/archives/${{ github.ref_name }}.tar.gz .
+
+      - name: Upload to S3
+        run: |
           aws s3 cp ${{ github.ref_name }}.tar.gz s3://csm-access-github-actions-poc-builds/qa/
 
       - name: Cleanup Local File
