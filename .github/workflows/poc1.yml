@@ -1,8 +1,8 @@
 on:
   push:
     branches:
-      - aws_poc
-      - dev
+      - aws_poc #need to check and make changes here
+      - dev  # Add other branches if needed
 
 jobs: 
   deploy:
@@ -19,19 +19,18 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy to EC2 & Tar Files
+      - name: Deploy to Build and ASGs
         run: |
+          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+          echo "Deploying branch: $BRANCH_NAME"
+
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            tar -czf /web_branch/archives/${{ github.ref_name }}.tar.gz -C /var/www/html/${{ github.ref_name }} .
+            #rm -rf /web_branch/branches/* #deleting current releases to save space on EC2, need to remove it 
+            #cd /home/ec2-user/deployer && dep deploy:unlock && dep deploy --branch=${BRANCH_NAME} 
+            #copy file to s3
+            aws s3 cp /web_branch/archives/${BRANCH_NAME}.tar.gz s3://csm-access-github-actions-poc-builds/qa/
+            
+            # sudo chown -R ${{ secrets.EC2_USER }}:$(whoami) /var/www/html/${BRANCH_NAME} 
           EOF
 
-      - name: Copy File from EC2 to GitHub Runner
-        run: |
-          scp -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/web_branch/archives/${{ github.ref_name }}.tar.gz .
-
-      - name: Upload to S3
-        run: |
-          aws s3 cp ${{ github.ref_name }}.tar.gz s3://csm-access-github-actions-poc-builds/qa/
-
-      - name: Cleanup Local File
-        run: rm -f ${{ github.ref_name }}.tar.gz
+          # rsync -avz --delete ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/${BRANCH_NAME}/
