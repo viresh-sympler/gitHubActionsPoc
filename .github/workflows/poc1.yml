@@ -47,7 +47,11 @@ jobs:
         run: aws sts get-caller-identity
 
       - name: Copy File from S3
-        run: aws s3 cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz .
+        run: |
+          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+          aws s3 cp s3://csm-access-github-actions-poc-builds/qa/${BRANCH_NAME}.tar.gz .
 
       - name: Extract the Archive
-        run: tar -xzvf ${BRANCH_NAME}.tar.gz -C /var/www/html/vcsdatabase.com/current/
+        run: |
+          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+          tar -xzvf ${BRANCH_NAME}.tar.gz -C /var/www/html/vcsdatabase.com/current/
