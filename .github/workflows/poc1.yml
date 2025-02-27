@@ -27,10 +27,11 @@ jobs:
           echo "Deploying branch: $BRANCH_NAME"
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            rm -rf /web_branch/branches/* #deleting current releases to save space on EC2, need to remove it 
-            cd /home/ec2-user/deployer && dep deploy:unlock && dep deploy --branch=aws_poc 
-            # sudo rm -rf /var/www/html/${BRANCH_NAME}
-            # sudo mkdir -p /var/www/html/${BRANCH_NAME}
+            #rm -rf /web_branch/branches/* #deleting current releases to save space on EC2, need to remove it 
+            #cd /home/ec2-user/deployer && dep deploy:unlock && dep deploy --branch=${BRANCH_NAME} 
+            #copy file to s3
+            aws s3 scp /web_branch/archives/${BRANCH_NAME}.tar.gz s3://csm-access-github-actions-poc-builds/qa/
+            
             # sudo chown -R ${{ secrets.EC2_USER }}:$(whoami) /var/www/html/${BRANCH_NAME} 
           EOF
 
