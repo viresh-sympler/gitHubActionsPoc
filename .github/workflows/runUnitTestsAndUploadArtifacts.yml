@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Run Unit Tests, create build and Deploy to ASG
 
 on:
   push:
