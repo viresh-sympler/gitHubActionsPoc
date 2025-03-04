@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev  # Add other branches if needed
+      - aws_poc
 
 jobs: 
   deploy:
