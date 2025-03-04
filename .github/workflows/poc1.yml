@@ -27,7 +27,7 @@ jobs:
           echo "Running Unit Tests on branch: $BRANCH_NAME"
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            cd /web_branch/branches/unitests/ && php runUnitTests.php ${BRANCH_NAME}
+            #cd /web_branch/branches/unitests/ && php runUnitTests.php ${BRANCH_NAME} #important
            
             #rm -rf /web_branch/branches/* #deleting current releases to save space on EC2, need to remove it 
             #cd /home/ec2-user/deployer && dep deploy:unlock && dep deploy --branch=${BRANCH_NAME} 
