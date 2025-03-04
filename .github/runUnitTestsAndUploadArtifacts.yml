@@ -21,7 +21,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy to EC2
+      - name: Run Unit Tests
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
           echo "Running Unit Tests on branch: $BRANCH_NAME"
@@ -37,13 +37,13 @@ jobs:
             # sudo chown -R ${{ secrets.EC2_USER }}:$(whoami) /var/www/html/${BRANCH_NAME} 
           EOF
 
-      - name: Run Deployment Step on Server  
+      - name: Create Build and upload Artifacts to S3 
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
           echo "Running Unit Tests on branch: $BRANCH_NAME"
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            rm -rf /web_branch/branches/code/** #deleting current releases to save space on EC2, need to remove it 
+            rm -rf /web_branch/branches/code/* #deleting current releases to save space on EC2, need to remove it 
             cd /home/ec2-user/deployer && dep deploy --branch=${BRANCH_NAME} 
             cd /web_branch/branches/aws_poc && tar --zstd -cf /web_branch/archives/${BRANCH_NAME}.tar.zst ./*
             
