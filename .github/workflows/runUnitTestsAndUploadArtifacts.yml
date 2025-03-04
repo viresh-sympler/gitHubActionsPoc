@@ -31,7 +31,7 @@ jobs:
             #copy file to s3
             aws s3 cp /web_branch/archives/${BRANCH_NAME}.tar.gz s3://csm-access-github-actions-poc-builds/dev/
             
-            # sudo chown -R ${{ secrets.EC2_USER }}:$(whoami) /var/www/html/${BRANCH_NAME} 
+            #sudo chown -R ${{ secrets.EC2_USER }}:$(whoami) /var/www/html/${BRANCH_NAME} 
           EOF
 
       - name: Configure AWS Credentials
