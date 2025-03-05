@@ -72,6 +72,15 @@ jobs:
           
           echo "instance_ids=$INSTANCE_IDS" >> $GITHUB_OUTPUT
 
+      - name: Run Command on EC2 via SSM
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceIds,Values=i-0ca71e76c1cd7dafe" \
+            --parameters "commands=['mkdir /qwerty']" \
+            --comment "Creating qwerty directory" \
+            --output json
+            
       - name: Run SSM Command and Capture Output
         id: run-command
         run: |
