@@ -65,17 +65,40 @@ jobs:
             --output text)
           echo "instance_ids=$INSTANCE_IDS" >> $GITHUB_OUTPUT
 
-      - name: Run SSM Command on ASG Instances
+      - name: Run SSM Command and Capture Output
+        id: run-command
         run: |
-          aws ssm send-command \
+          # Run SSM command and capture the command ID
+          COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --document-version "1" \
             --targets "Key=InstanceIds,Values=${{ steps.get-instances.outputs.instance_ids }}" \
-            --parameters '{"commands":["${{ github.event.inputs.command }}"]}' \
+            --parameters '{"commands":["sudo su - ec2-user -c \"mkdir -p /web_branch/hihi\""]}' \
             --timeout-seconds 600 \
             --max-concurrency "50%" \
             --max-errors "0" \
-            --region us-east-2
+            --region us-east-2 \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "command_id=$COMMAND_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait and Retrieve Command Output
+        run: |
+          # Wait for command to complete
+          aws ssm wait command-executed \
+            --command-id ${{ steps.run-command.outputs.command_id }} \
+            --instance-ids ${{ steps.get-instances.outputs.instance_ids }}
+          
+          # Retrieve and display command output for each instance
+          for INSTANCE_ID in $(echo "${{ steps.get-instances.outputs.instance_ids }}" | tr ' ' '\n'); do
+            echo "Output for Instance $INSTANCE_ID:"
+            aws ssm get-command-invocation \
+              --command-id ${{ steps.run-command.outputs.command_id }} \
+              --instance-id $INSTANCE_ID \
+              --query '[Status, StandardOutputContent, StandardErrorContent]' \
+              --output table
+          done
       
       # - name: Run SSM Command on EC2
       #   run: |
