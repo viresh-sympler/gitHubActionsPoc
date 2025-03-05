@@ -80,7 +80,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --document-version "1" \
             --targets "Key=InstanceIds,Values=${{ steps.get-instances.outputs.instance_ids }}" \
-            --parameters '{"commands":["sudo su - ec2-user -c \"mkdir -p /web_branch/hihi\""]}' \
+            --parameters '{"commands":["mkdir /hihi"]}' \
             --timeout-seconds 600 \
             --max-concurrency "50%" \
             --max-errors "0" \
