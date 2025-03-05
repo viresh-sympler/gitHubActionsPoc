@@ -84,7 +84,7 @@ jobs:
             --timeout-seconds 600 \
             --max-concurrency "50%" \
             --max-errors "0" \
-            --region us-east-1 \
+            --region us-east-2 \
             --query "Command.CommandId" \
             --output text)
           
