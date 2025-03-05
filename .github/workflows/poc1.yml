@@ -53,7 +53,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1  # Change to your AWS region
+          aws-region: us-east-2  # Change to your AWS region
 
       - name: Get ASG Instance IDs
         id: get-instances
@@ -64,7 +64,19 @@ jobs:
             --query 'AutoScalingGroups[0].Instances[*].InstanceId' \
             --output text)
           echo "instance_ids=$INSTANCE_IDS" >> $GITHUB_OUTPUT
-          
+
+      - name: Run SSM Command on ASG Instances
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --document-version "1" \
+            --targets "Key=InstanceIds,Values=${{ steps.get-instances.outputs.instance_ids }}" \
+            --parameters '{"commands":["${{ github.event.inputs.command }}"]}' \
+            --timeout-seconds 600 \
+            --max-concurrency "50%" \
+            --max-errors "0" \
+            --region us-east-2
+      
       # - name: Run SSM Command on EC2
       #   run: |
       #     BRANCH_NAME=$(echo ${GITHUB_REF##*/})
