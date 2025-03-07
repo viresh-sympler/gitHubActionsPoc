@@ -62,57 +62,71 @@ jobs:
   #           sleep 5
   #         done
 
-  # build_upload_s3:
-  #   runs-on: ubuntu-latest
-  #   environment: dev
-  #   needs: unit_tests  # Ensures this runs only after unit tests pass
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v4 
+  build_upload_s3:
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: unit_tests  # Ensures this runs only after unit tests pass
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4 
 
-  #     - name: Create Build and Upload to S3 via SSM
-  #       run: |
-  #         BRANCH_NAME=$(echo ${GITHUB_REF##*/})
-  #         echo "Creating Build and uploading artifact to S3: $BRANCH_NAME"
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
+          
+      - name: Create Build and Upload to S3 via SSM
+        run: |
+          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+          echo "Creating Build and uploading artifact to S3: $BRANCH_NAME"
 
-  #         COMMAND_ID=$(aws ssm send-command \
-  #           --document-name "AWS-RunShellScript" \
-  #           --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"${{ secrets.EC2_INSTANCE_TAG }}\"]}]" \
-  #           --parameters "commands=['cd /home/ec2-user/deployer && dep deploy --branch=${BRANCH_NAME}', 'cd ${{ vars.BRANCH_PATH }}${BRANCH_NAME} && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ./.', 'aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ${{ vars.S3_BUILD_PATH }}']" \
-  #           --region ${{ vars.AWS_REGION }} \
-  #           --query "Command.CommandId" --output text)
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets '[{"Key":"InstanceIds","Values":["${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"]}]' \
+            --parameters "commands=['cd /home/ec2-user/deployer && dep deploy --branch=${BRANCH_NAME}', 'cd ${{ vars.BRANCH_PATH }}${BRANCH_NAME} && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ./.', 'aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ${{ vars.S3_BUILD_PATH }}']" \
+            --region ${{ vars.AWS_REGION }} \
+            --query "Command.CommandId" --output text)
 
-  #         echo "Waiting for build and upload to complete..."
+          echo "Waiting for build and upload to complete..."
 
-  #         while true; do
-  #           STATUS=$(aws ssm list-command-invocations \
-  #             --command-id "$COMMAND_ID" \
-  #             --details \
-  #             --query "CommandInvocations[0].Status" \
-  #             --output text \
-  #             --region ${{ vars.AWS_REGION }})
+          while true; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text \
+              --region ${{ vars.AWS_REGION }})
 
-  #           echo "Current Status: $STATUS"
+            echo "Current Status: $STATUS"
 
-  #           if [[ "$STATUS" == "Success" ]]; then
-  #             echo "Build & Upload Completed ✅"
-  #             break
-  #           elif [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]]; then
-  #             echo "Build & Upload Failed ❌"
-  #             exit 1
-  #           fi
+            if [[ "$STATUS" == "Success" ]]; then
+              echo "Build & Upload Completed ✅"
+              break
+            elif [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]]; then
+              echo "Build & Upload Failed ❌"
+              exit 1
+            fi
             
-  #           sleep 5
-  #         done
+            sleep 5
+          done
+          # Fetch the command output once completed
+          OUTPUT=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}" \
+              --region ${{ vars.AWS_REGION }} \
+              --query "StandardOutputContent" --output text)
+          
+          echo "Command Output:"
+          echo "$OUTPUT"
 
   deploy_asg:
     runs-on: ubuntu-latest
     environment: dev
     # needs: build_upload_s3  # Ensures deployment happens only after build & upload
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4 
-
       - name: Checkout Repository
         uses: actions/checkout@v4 
 
