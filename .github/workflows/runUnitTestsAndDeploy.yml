@@ -143,7 +143,7 @@ jobs:
             STATUS=$(aws ssm list-command-invocations \
               --command-id "$COMMAND_ID" \
               --details \
-              --query "Status" \
+              --query "CommandInvocations[0].Status" \
               --output text \
               --region ${{ vars.AWS_REGION }})
         
