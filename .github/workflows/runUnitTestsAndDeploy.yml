@@ -128,16 +128,17 @@ jobs:
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
           echo "Deploying branch: $BRANCH_NAME to all web servers"
-
+        
+          # Start SSM command execution
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}\"]}]" \
-            --parameters "commands=['php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{vars.AWS_REGION}} --asg=${{vars.AWS_ASG_NAME}} --branch=${BRANCH_NAME}']" \
+            --targets '[{"Key":"tag:Name","Values":["'"${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"'"]}]' \
+            --parameters commands='["php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{ vars.AWS_REGION }} --asg=${{ vars.AWS_ASG_NAME }} --branch=${BRANCH_NAME}"]' \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
-
-          echo "Waiting for deployment to complete..."
-
+        
+          echo "Waiting for deployment to complete... Command ID: $COMMAND_ID"
+        
           while true; do
             STATUS=$(aws ssm list-command-invocations \
               --command-id "$COMMAND_ID" \
@@ -145,15 +146,17 @@ jobs:
               --query "CommandInvocations[0].Status" \
               --output text \
               --region ${{ vars.AWS_REGION }})
-
+        
             echo "Current Status: $STATUS"
-
+        
+            if [[ -z "$STATUS" || "$STATUS" == "Cancelled" || "$STATUS" == "Failed" || "$STATUS" == "TimedOut" ]]; then
+              echo "SSM command failed or did not start ❌"
+              exit 1
+            fi
+        
             if [[ "$STATUS" == "Success" ]]; then
               echo "Deployment Completed ✅"
               break
-            elif [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]]; then
-              echo "Deployment Failed ❌"
-              exit 1
             fi
             
             sleep 5
