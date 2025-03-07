@@ -19,6 +19,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4 
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
+        
       - name: Run Unit Tests via SSM
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
