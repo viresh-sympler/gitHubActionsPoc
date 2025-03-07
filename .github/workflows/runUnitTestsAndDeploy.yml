@@ -14,6 +14,7 @@ on:
 jobs: 
   deploy:
     runs-on: ubuntu-latest
+    environment: dev
 
     steps:
       - name: Print Environment Variable
