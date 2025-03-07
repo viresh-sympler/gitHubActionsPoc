@@ -1,61 +1,141 @@
-name: Run Unit Tests, Create Build and Deploy Application to Web Servers
+name: Run Unit Tests, Create Build and Deploy to ASG Instances via SSM
 
 on:
   push:
     branches:
-      - dev  # Add other branches if needed
-      - aws_poc  # Add other branches if needed
-      - '**/*dev*/**'  # Matches path-like branch names containing "dev"
+      - dev  
+      - aws_poc  
+      - '**/*dev*/**'  
   pull_request:
-    types: [closed]    # This catches merge events
+    types: [closed]    
     branches:
-      - '**/*dev*/**'  # Matches path-like branch names containing "dev"
+      - '**/*dev*/**'  
 
 jobs: 
-  deploy:
+  unit_tests:
     runs-on: ubuntu-latest
     environment: dev
-
-    steps:        
+    steps:
       - name: Checkout Repository
         uses: actions/checkout@v4 
- 
-      - name: Set Up SSH Connection
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Run Unit Tests
+      - name: Run Unit Tests via SSM
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
           echo "Running Unit Tests on branch: $BRANCH_NAME"
 
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            php ${{ vars.UNIT_TESTS_PATH }} ${BRANCH_NAME} #important          
-          EOF
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"${{ secrets.EC2_INSTANCE_TAG }}\"]}]" \
+            --parameters "commands=['php ${{ vars.UNIT_TESTS_PATH }} $BRANCH_NAME']" \
+            --region ${{ vars.AWS_REGION }} \
+            --query "Command.CommandId" --output text)
 
-      - name: Create Build and upload artifacts to S3  
+          echo "Waiting for test execution to complete..."
+
+          while true; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text \
+              --region ${{ vars.AWS_REGION }})
+
+            echo "Current Status: $STATUS"
+
+            if [[ "$STATUS" == "Success" ]]; then
+              echo "Unit Tests Passed ✅"
+              break
+            elif [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]]; then
+              echo "Unit Tests Failed ❌"
+              exit 1
+            fi
+            
+            sleep 5
+          done
+
+  build_upload_s3:
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: unit_tests  # Ensures this runs only after unit tests pass
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4 
+
+      - name: Create Build and Upload to S3 via SSM
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
           echo "Creating Build and uploading artifact to S3: $BRANCH_NAME"
 
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            #rm -rf /web_branch/branches/code/* #deleting current releases to save space on EC2, need to remove it  #important
-            cd /home/ec2-user/deployer && dep deploy --branch=${BRANCH_NAME} #important
-            cd ${{ vars.BRANCH_PATH }}${BRANCH_NAME} && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ./. #important
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"${{ secrets.EC2_INSTANCE_TAG }}\"]}]" \
+            --parameters "commands=['cd /home/ec2-user/deployer && dep deploy --branch=${BRANCH_NAME}', 'cd ${{ vars.BRANCH_PATH }}${BRANCH_NAME} && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ./.', 'aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ${{ vars.S3_BUILD_PATH }}']" \
+            --region ${{ vars.AWS_REGION }} \
+            --query "Command.CommandId" --output text)
+
+          echo "Waiting for build and upload to complete..."
+
+          while true; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text \
+              --region ${{ vars.AWS_REGION }})
+
+            echo "Current Status: $STATUS"
+
+            if [[ "$STATUS" == "Success" ]]; then
+              echo "Build & Upload Completed ✅"
+              break
+            elif [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]]; then
+              echo "Build & Upload Failed ❌"
+              exit 1
+            fi
             
-            #copy file to s3
-            aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ${{ vars.S3_BUILD_PATH }} #important
-            
-          EOF
-          
-      - name: Deploy branch to Web Servers
+            sleep 5
+          done
+
+  deploy_asg:
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: build_upload_s3  # Ensures deployment happens only after build & upload
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4 
+
+      - name: Deploy to ASG Instances via SSM
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
           echo "Deploying branch: $BRANCH_NAME to all web servers"
 
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{vars.AWS_REGION}} --asg=${{vars.AWS_ASG_NAME}} --branch=${BRANCH_NAME}
-          EOF
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"${{ secrets.ASG_INSTANCE_TAG }}\"]}]" \
+            --parameters "commands=['php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{vars.AWS_REGION}} --asg=${{vars.AWS_ASG_NAME}} --branch=${BRANCH_NAME}']" \
+            --region ${{ vars.AWS_REGION }} \
+            --query "Command.CommandId" --output text)
+
+          echo "Waiting for deployment to complete..."
+
+          while true; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text \
+              --region ${{ vars.AWS_REGION }})
+
+            echo "Current Status: $STATUS"
+
+            if [[ "$STATUS" == "Success" ]]; then
+              echo "Deployment Completed ✅"
+              break
+            elif [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]]; then
+              echo "Deployment Failed ❌"
+              exit 1
+            fi
+            
+            sleep 5
+          done
