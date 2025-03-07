@@ -132,7 +132,7 @@ jobs:
           # Start SSM command execution
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets '[{"Key":"tag:Name","Values":["${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"]}]' \
+            --targets '[{"Key":"InstanceIds","Values":["${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"]}]' \
             --parameters commands='["php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{ vars.AWS_REGION }} --asg=${{ vars.AWS_ASG_NAME }} --branch=aws_poc"]' \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
