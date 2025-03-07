@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Print Environment Variable
+        run: echo "MY_SECRET_VAR is $UNIT_TESTS_PATH"
+        
       - name: Checkout Repository
         uses: actions/checkout@v4 
  
