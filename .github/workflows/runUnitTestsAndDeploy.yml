@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Print Environment Variable
-        run: echo "MY_SECRET_VAR is $UNIT_TESTS_PATH"
+        run: echo "MY_SECRET_VAR is ${{ vars.UNIT_TESTS_PATH }}"
         
       - name: Checkout Repository
         uses: actions/checkout@v4 
