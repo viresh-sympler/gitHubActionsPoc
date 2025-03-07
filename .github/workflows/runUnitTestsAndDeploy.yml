@@ -43,11 +43,11 @@ jobs:
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             #rm -rf /web_branch/branches/code/* #deleting current releases to save space on EC2, need to remove it  #important
-            #cd /home/ec2-user/deployer && dep deploy --branch=${BRANCH_NAME} #important
-            #cd /web_branch/branches/${BRANCH_NAME} && tar --zstd -cf /web_branch/archives/${BRANCH_NAME}.tar.zst ./. #important
+            cd /home/ec2-user/deployer && dep deploy --branch=${BRANCH_NAME} #important
+            cd ${{ vars.BRANCH_PATH }}${BRANCH_NAME} && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ./. #important
             
             #copy file to s3
-            #aws s3 cp /web_branch/archives/${BRANCH_NAME}.tar.zst s3://csm-access-github-actions-poc-builds/dev/ #important
+            aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ${{ vars.S3_BUILD_PATH }} #important
             
           EOF
           
@@ -57,5 +57,5 @@ jobs:
           echo "Deploying branch: $BRANCH_NAME to all web servers"
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            #php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=us-east-2 --asg=csm-saccess-dev-asg --branch=${BRANCH_NAME}
+            php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{vars.AWS_REGION}} --asg=${{vars.AWS_ASG_NAME}} --branch=${BRANCH_NAME}
           EOF
