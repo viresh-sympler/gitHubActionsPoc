@@ -34,7 +34,7 @@ jobs:
 
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"${{ secrets.EC2_INSTANCE_TAG }}\"]}]" \
+            --targets "[{\"Key\":\"tag:Name\",\"Values\":[\"${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}\"]}]" \
             --parameters "commands=['php ${{ vars.UNIT_TESTS_PATH }} $BRANCH_NAME']" \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
