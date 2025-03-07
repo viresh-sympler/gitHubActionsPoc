@@ -16,10 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
 
-    steps:
-      - name: Print Environment Variable
-        run: echo "MY_SECRET_VAR is ${{ vars.UNIT_TESTS_PATH }}"
-        
+    steps:        
       - name: Checkout Repository
         uses: actions/checkout@v4 
  
@@ -36,7 +33,7 @@ jobs:
           echo "Running Unit Tests on branch: $BRANCH_NAME"
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            php $UNIT_TESTS_PATH ${BRANCH_NAME} #important          
+            php ${{ vars.UNIT_TESTS_PATH }} ${BRANCH_NAME} #important          
           EOF
 
       - name: Create Build and upload artifacts to S3  
