@@ -5,7 +5,7 @@ on:
     branches:
       - dev  
       - aws_poc  
-      - '**/*dev*/**'  
+      - '**/*dev*/**'
   pull_request:
     types: [closed]    
     branches:
