@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - dev
-      - 495254/AWS_secrets_manager
+      - 1072056/Integration_AWS_Secrets_Manager
       - '**/*dev*/**'
   pull_request:
     types: [closed]
