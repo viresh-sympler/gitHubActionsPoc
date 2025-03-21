@@ -98,9 +98,9 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --targets '[{"Key":"InstanceIds","Values":["${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"]}]' \
             --parameters "commands=[
-                'sudo -u ec2-user bash -c \"cd /home/ec2-user/deployer/build_server && source ~/.bashrc && /usr/local/bin/dep deploy --branch=495254/AWS_secrets_manager\"',
-                'sudo -u ec2-user bash -c \"source ~/.bashrc && cd ${{ vars.BRANCH_PATH }}495254-AWS_secrets_manager && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}495254-AWS_secrets_manager.tar.zst ./.\"',
-                'sudo -u ec2-user bash -c \"export PATH=$PATH:/home/ec2-user/.local/bin:/usr/local/bin && aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}495254-AWS_secrets_manager.tar.zst ${{ vars.S3_BUILD_PATH }}\"'
+                'sudo -u ec2-user bash -c \"cd /home/ec2-user/deployer/build_server && source ~/.bashrc && /usr/local/bin/dep deploy --branch=1072056/Integration_AWS_Secrets_Manager\"',
+                'sudo -u ec2-user bash -c \"source ~/.bashrc && cd ${{ vars.BRANCH_PATH }}1072056-Integration_AWS_Secrets_Manager && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}1072056-Integration_AWS_Secrets_Manager.tar.zst ./.\"',
+                'sudo -u ec2-user bash -c \"export PATH=$PATH:/home/ec2-user/.local/bin:/usr/local/bin && aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}1072056-Integration_AWS_Secrets_Manager.tar.zst ${{ vars.S3_BUILD_PATH }}\"'
             ]" \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
@@ -163,7 +163,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets '[{"Key":"InstanceIds","Values":["${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"]}]' \
-            --parameters commands="[\"source ~/.bashrc && php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{ vars.AWS_REGION }} --asg=${{ vars.AWS_ASG_NAME }} --branch=495254-AWS_secrets_manager\"]" \
+            --parameters commands="[\"source ~/.bashrc && php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{ vars.AWS_REGION }} --asg=${{ vars.AWS_ASG_NAME }} --branch=1072056-Integration_AWS_Secrets_Manager\"]" \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
         
