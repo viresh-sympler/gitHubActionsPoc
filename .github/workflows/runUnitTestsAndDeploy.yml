@@ -3,21 +3,21 @@ name: Run Unit Tests, Create Build and Deploy to ASG Instances via SSM
 on:
   push:
     branches:
-      - dev  
-      - aws_poc  
+      - dev
+      - 495254/AWS_secrets_manager
       - '**/*dev*/**'
   pull_request:
-    types: [closed]    
+    types: [closed]
     branches:
-      - '**/*dev*/**'   
+      - '**/*dev*/**'
 
-jobs: 
+jobs:
   unit_tests:
     runs-on: ubuntu-latest
     environment: dev
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -26,7 +26,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
-        
+
       - name: Run Unit Tests via SSM
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
@@ -78,7 +78,7 @@ jobs:
     needs: unit_tests  # Ensures this runs only after unit tests pass
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -87,7 +87,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
-          
+
       - name: Create Build and Upload to S3 via SSM
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
@@ -143,7 +143,7 @@ jobs:
     needs: build_upload_s3  # Ensures deployment happens only after build & upload
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -152,7 +152,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
-          
+
       - name: Deploy to ASG Instances via SSM
         run: |
           BRANCH_NAME=$(echo ${GITHUB_REF##*/})
