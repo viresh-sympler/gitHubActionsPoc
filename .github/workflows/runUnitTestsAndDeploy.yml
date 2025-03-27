@@ -94,7 +94,7 @@ jobs:
       - name: Create Build and Upload to S3 via SSM
         run: |
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          BRANCH_NAME_PATH=${GITHUB_REF#refs/heads/} | sed 's|/|-|g')
+          BRANCH_NAME_PATH=$(echo ${GITHUB_REF#refs/heads/} | sed 's|/|-|g')
           echo "Creating Build and uploading artifact to S3: $BRANCH_NAME"
 
           COMMAND_ID=$(aws ssm send-command \
