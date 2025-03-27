@@ -3,11 +3,11 @@ name: Run Unit Tests, Create Build and Deploy to ASG Instances via SSM
 on:
   push:
     branches:
-      - ${{ github.ref_name }}
+      - 495254/AWS_Db_Host_secrets_manager
   pull_request:
     types: [closed]
     branches:
-      - ${{ github.ref_name }}
+      - 495254/AWS_Db_Host_secrets_manager
 
 jobs:
   unit_tests:
