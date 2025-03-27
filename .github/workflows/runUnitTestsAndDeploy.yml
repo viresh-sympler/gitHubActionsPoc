@@ -29,14 +29,14 @@ jobs:
 
       - name: Run Unit Tests via SSM
         run: |
-          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
-          echo "Running Unit Tests on branch: $BRANCH_NAME"
-
-          aws ssm start-session \
-                      --target "${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}" \
-                      --document-name AWS-StartInteractiveCommand \
-                      --parameters "command=['sudo -u ec2-user -- php ${{ vars.UNIT_TESTS_PATH }} $BRANCH_NAME']" \
-                      --region ${{ vars.AWS_REGION }}
+#          BRANCH_NAME=$(echo ${GITHUB_REF##*/})
+#          echo "Running Unit Tests on branch: $BRANCH_NAME"
+#
+#          aws ssm start-session \
+#                      --target "${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}" \
+#                      --document-name AWS-StartInteractiveCommand \
+#                      --parameters "command=['sudo -u ec2-user -- php ${{ vars.UNIT_TESTS_PATH }} $BRANCH_NAME']" \
+#                      --region ${{ vars.AWS_REGION }}
 #          COMMAND_ID=$(aws ssm send-command \
 #            --document-name "AWS-RunShellScript" \
 #            --targets '[{"Key":"InstanceIds","Values":["${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"]}]' \
@@ -103,12 +103,13 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --targets '[{"Key":"InstanceIds","Values":["${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}"]}]' \
             --parameters "commands=[
-                'sudo -u ec2-user bash -c \"cd /home/ec2-user/deployer/build_server && source ~/.bashrc && /usr/local/bin/dep deploy --branch=${BRANCH_NAME}\"',
-                'sudo -u ec2-user bash -c \"source ~/.bashrc && cd ${{ vars.BRANCH_PATH }}${BRANCH_NAME_PATH} && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME_PATH}.tar.zst ./.\"',
-                'sudo -u ec2-user bash -c \"export PATH=$PATH:/home/ec2-user/.local/bin:/usr/local/bin && aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME_PATH}.tar.zst ${{ vars.S3_BUILD_PATH }}\"'
-            ]" \
+            'sudo -u ec2-user bash -c \"cd /home/ec2-user/deployer/build_server && source ~/.bashrc && /usr/local/bin/dep deploy --branch=${BRANCH_NAME}\"',
+            'sudo -u ec2-user bash -c \"source ~/.bashrc && cd ${{ vars.BRANCH_PATH }}${BRANCH_NAME} && tar --zstd -cf ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ./.\"',
+            'sudo -u ec2-user bash -c \"export PATH=$PATH:/home/ec2-user/.local/bin:/usr/local/bin && aws s3 cp ${{vars.BRANCH_ARCHIVES_PATH}}${BRANCH_NAME}.tar.zst ${{ vars.S3_BUILD_PATH }}\"'
+          ]" \
             --region ${{ vars.AWS_REGION }} \
-            --query "Command.CommandId" --output text)
+            --query "Command.CommandId" --output text \
+            --cloud-watch-output-config '{"CloudWatchOutputEnabled":true, "CloudWatchLogGroupName":"/aws/ssm/commands"}')
 
           echo "Waiting for build and upload to complete..."
 
