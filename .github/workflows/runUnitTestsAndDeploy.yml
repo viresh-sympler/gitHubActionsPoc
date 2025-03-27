@@ -35,7 +35,7 @@ jobs:
           aws ssm start-session \
                       --target "${{ vars.BUILD_SERVER_EC2_INSTANCE_TAG }}" \
                       --document-name AWS-StartInteractiveCommand \
-                      --parameters "command=['php ${{ vars.UNIT_TESTS_PATH }} $BRANCH_NAME']" \
+                      --parameters "command=['sudo -u ec2-user -- php ${{ vars.UNIT_TESTS_PATH }} $BRANCH_NAME']" \
                       --region ${{ vars.AWS_REGION }}
 #          COMMAND_ID=$(aws ssm send-command \
 #            --document-name "AWS-RunShellScript" \
