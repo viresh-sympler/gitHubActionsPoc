@@ -56,7 +56,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets '[{"Key":"InstanceIds","Values":["${{ vars.INSTANCE_ID }}"]}]' \
-            --parameters "commands=['sudo -u ec2-user bash -c \"php /home/ec2-user/unit_test/runUnitTests.php ${BRANCH_NAME}\"']" \
+            --parameters "commands=['sudo -u ec2-user bash -c \"sudo php /home/ec2-user/unit_test/runUnitTests.php ${BRANCH_NAME}\"']" \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
           
