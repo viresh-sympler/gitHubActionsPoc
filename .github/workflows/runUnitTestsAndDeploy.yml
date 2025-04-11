@@ -82,8 +82,6 @@ jobs:
     environment: ${{ inputs.ENVIRONMENT || 'dev' }}
     env:
       ENVIRONMENT: ${{ inputs.ENVIRONMENT || 'dev' }}
-    outputs:
-      instance_id: ${{ steps.fetch_instance_id.outputs.instance_id }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -171,8 +169,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT || 'dev' }}
     needs: build_upload_s3  # Ensures deployment happens only after build & upload
-    env:
-      INSTANCE_ID: ${{ needs.build_upload_s3.outputs.instance_id }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -185,20 +181,34 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
 
+      - name: Fetch EC2 Instance ID
+        id: fetch_instance_id
+        run: |
+          # Fetch the running EC2 instance ID based on the tag and instance state being 'running'
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=csm-saccess-${{ env.ENVIRONMENT }}-ec2-build" \
+                      "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].InstanceId" \
+            --output text)
+
+          # Debugging step to see the value of INSTANCE_ID
+          echo "Retrieved INSTANCE_ID = $INSTANCE_ID"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+
       - name: Deploy to ASG Instances via SSM
         run: |
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           BRANCH_NAME_PATH=$(echo ${GITHUB_REF#refs/heads/} | sed 's|/|-|g')
-          echo "Deploying branch: $BRANCH_NAME to all web servers using INSTANCE_ID=$INSTANCE_ID"
+          echo "Deploying branch: $BRANCH_NAME to all web servers"
 
           # Start SSM command execution
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets '[{"Key":"InstanceIds","Values":["'"$INSTANCE_ID"'"]}]' \
+            --targets '[{"Key":"InstanceIds","Values":["${{ env.INSTANCE_ID }}"]}]' \
             --parameters commands="[\"source ~/.bashrc && php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{ vars.AWS_REGION }} --asg=${{ vars.AWS_ASG_NAME }} --branch=${BRANCH_NAME_PATH}\"]" \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
-          exit 1
+
           echo "Waiting for deployment to complete... Command ID: $COMMAND_ID"
 
           while true; do
