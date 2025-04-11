@@ -194,7 +194,7 @@ jobs:
           # Start SSM command execution
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets '[{"Key":"InstanceIds","Values":["${{ env.INSTANCE_ID }}"]}]' \
+            --targets '[{"Key":"InstanceIds","Values":["'"$INSTANCE_ID"'"]}]' \
             --parameters commands="[\"source ~/.bashrc && php /home/ec2-user/deployer/deploy_to_web_servers/deployToAsg.php --region=${{ vars.AWS_REGION }} --asg=${{ vars.AWS_ASG_NAME }} --branch=${BRANCH_NAME_PATH}\"]" \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" --output text)
