@@ -189,7 +189,7 @@ jobs:
         run: |
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           BRANCH_NAME_PATH=$(echo ${GITHUB_REF#refs/heads/} | sed 's|/|-|g')
-          echo "Deploying branch: $BRANCH_NAME to all web servers"
+          echo "Deploying branch: $BRANCH_NAME to all web servers using INSTANCE_ID=$INSTANCE_ID"
 
           # Start SSM command execution
           COMMAND_ID=$(aws ssm send-command \
