@@ -82,6 +82,8 @@ jobs:
     environment: ${{ inputs.ENVIRONMENT || 'dev' }}
     env:
       ENVIRONMENT: ${{ inputs.ENVIRONMENT || 'dev' }}
+    outputs:
+      instance_id: ${{ steps.fetch_instance_id.outputs.instance_id }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -169,6 +171,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT || 'dev' }}
     needs: build_upload_s3  # Ensures deployment happens only after build & upload
+    env:
+      INSTANCE_ID: ${{ needs.build_upload_s3.outputs.instance_id }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
