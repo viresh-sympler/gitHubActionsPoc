@@ -142,6 +142,14 @@ jobs:
               break
             elif [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]]; then
               echo "Build & Upload Failed ❌"
+              OUTPUT=$(aws ssm get-command-invocation \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "${{ vars.INSTANCE_ID }}" \
+                  --region ${{ vars.AWS_REGION }} \
+                  --query "StandardOutputContent" --output text)
+    
+              echo "Command Output:"
+              echo "$OUTPUT"
               exit 1
             fi
             
