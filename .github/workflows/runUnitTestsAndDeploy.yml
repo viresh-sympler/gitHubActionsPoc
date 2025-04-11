@@ -99,7 +99,7 @@ jobs:
         run: |
           # Fetch the running EC2 instance ID based on the tag and instance state being 'running'
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=csm-saccess-${{ env.ENVIRONMENT }}-ec2-dev" \
+            --filters "Name=tag:Name,Values=csm-saccess-${{ env.ENVIRONMENT }}-ec2-build" \
                       "Name=instance-state-name,Values=running" \
             --query "Reservations[*].Instances[*].InstanceId" \
             --output text)
