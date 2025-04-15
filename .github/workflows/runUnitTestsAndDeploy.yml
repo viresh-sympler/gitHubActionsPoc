@@ -6,7 +6,7 @@ on:
       NAMESPACE:
         type: string
         description: "Namespace"
-        default: dev
+        default: qa
         required: true
   push:
     branches:
