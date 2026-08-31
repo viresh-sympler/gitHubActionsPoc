@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - dev  # Add other branches if needed
+      - dev  # Add other branches if needed n
 
 jobs: 
   deploy:
